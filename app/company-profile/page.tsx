@@ -4,6 +4,8 @@ import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { Header } from "../components/Header";
 import { AppTabs } from "../components/AppTabs";
 import { Card, Button, Input, Select } from "../components/DemoComponents";
+import { supabase } from "../../lib/supabaseClient";
+import Image from "next/image";
 
 type CompanyData = {
   name: string;
@@ -30,21 +32,34 @@ export default function CompanyProfilePage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [countries, setCountries] = useState<{ name: string; iso2: string }[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  // Types for country API response
+  type RestCountry = {
+    cca2: string;
+    name: {
+      common: string;
+      [key: string]: string;
+    };
+    [key: string]: string | object;
+  };
 
   // Fetch country list from restcountries.com
   useEffect(() => {
     setCountriesLoading(true);
     fetch("https://restcountries.com/v3.1/all?fields=name,cca2")
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: RestCountry[]) => {
         // Sort by name, filter out missing ISO2
         const countryList = data
-          .filter((c: any) => c.cca2 && c.name && c.name.common)
-          .map((c: any) => ({
+          .filter((c: RestCountry) => c.cca2 && c.name && c.name.common)
+          .map((c: RestCountry) => ({
             name: c.name.common,
             iso2: c.cca2,
           }))
-          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+          .sort((a, b) => a.name.localeCompare(b.name));
         setCountries(countryList);
       })
       .catch(() => setCountries([]))
@@ -75,11 +90,54 @@ export default function CompanyProfilePage() {
     }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // Persist company data to localStorage
-    localStorage.setItem("companyProfile", JSON.stringify(company));
-    alert("Company profile saved (locally)!");
+    setSubmitting(true);
+    setError(null);
+    setSuccess(false);
+
+    let logoUrl = company.logoUrl;
+
+    // Upload logo file to Supabase Storage if present
+    if (logoFile) {
+      const fileExt = logoFile.name.split('.').pop();
+      const safeCompanyName = company.name.trim().replace(/\s+/g, "_");
+      const fileName = `${safeCompanyName}-logo_${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("company-logos")
+        .upload(fileName, logoFile, { upsert: true });
+
+      if (uploadError) {
+        setError("Failed to upload logo: " + uploadError.message);
+        setSubmitting(false);
+        return;
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("company-logos")
+        .getPublicUrl(fileName);
+      logoUrl = publicUrlData?.publicUrl || null;
+    }
+
+    // Insert company profile into Supabase
+    const { error: insertError } = await supabase
+      .from("company_profiles")
+      .insert([
+        {
+          ...company,
+          logoUrl,
+        },
+      ]);
+
+    if (insertError) {
+      setError("Failed to save company profile: " + insertError.message);
+      setSubmitting(false);
+      return;
+    }
+
+    setSuccess(true);
+    setSubmitting(false);
   };
 
   return (
@@ -212,17 +270,21 @@ export default function CompanyProfilePage() {
               />
               {company.logoUrl && (
                 <div className="mt-2">
-                  <img
+                  <Image
                     src={company.logoUrl}
                     alt="Company Logo Preview"
+                    height={96}
+                    width={96}
                     className="h-24 w-24 object-contain border rounded bg-white"
                   />
                 </div>
               )}
             </div>
-            <Button type="submit" variant="primary" className="w-full">
-              Save Profile
+            <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
+              {submitting ? "Saving..." : "Save Profile"}
             </Button>
+            {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
+            {success && <div className="text-green-600 text-sm mt-2">Company profile saved!</div>}
           </form>
         </Card>
       </div>

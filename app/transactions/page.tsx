@@ -139,6 +139,7 @@ export default function TransactionsPage() {
         }
       } catch (err) {
         setError("Failed to fetch transactions.");
+        console.error(err);
         setTransactions([]);
         setUsdValues({});
       } finally {
@@ -443,7 +444,6 @@ export default function TransactionsPage() {
                       const headers = ["Hash", "From", "To", "Value (ETH)", "Value (USD)", "Timestamp"];
                       const colWidths = [30, 30, 30, 20, 20, 40];
                       const tableStartX = 10;
-                      let tableStartY = y;
                       const rowHeight = 10; // double the previous height
                       doc.setFont("helvetica", "bold");
                       let x = tableStartX;

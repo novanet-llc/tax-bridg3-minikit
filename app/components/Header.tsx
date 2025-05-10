@@ -83,8 +83,9 @@ export function Header() {
           </WalletDropdown>
         </Wallet>
       </div>
+      <div>{saveFrameButton}</div>
       <div className="text-lg font-bold text-[var(--app-accent)]">Tax Bridg3</div>
-      {/* <div>{saveFrameButton}</div> */}
+      
     </header>
   );
 }

@@ -1,16 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Card } from "./DemoComponents";
-import { Button } from "./DemoComponents";
-import { useNotification } from "@coinbase/onchainkit/minikit";
-import {
-  Name
-} from "@coinbase/onchainkit/identity";
-import {
-  ConnectWallet,
-  Wallet
-} from "@coinbase/onchainkit/wallet";
 
 export default function Home() {
 
