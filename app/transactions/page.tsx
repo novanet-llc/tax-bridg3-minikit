@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { AppTabs } from "../components/AppTabs";
 import { Card, Button, Select, Input } from "../components/DemoComponents";
-import { useMiniKit } from "@coinbase/onchainkit/minikit";
+import { Name } from "@coinbase/onchainkit/identity";
 
 type Transaction = {
   hash: string;
@@ -34,11 +34,7 @@ type TimeFrame = "thisMonth" | "lastMonth" | "lastYear" | "custom";
 
 export default function TransactionsPage() {
   const { address } = useAccount();
-  const { context } = useMiniKit();
-  // TEMP: Log context to debug identity structure
-  if (typeof window !== "undefined") {
-    console.log("MiniKit context:", context);
-  }
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,8 +103,16 @@ export default function TransactionsPage() {
             await Promise.all(
               Object.entries(dateMap).map(async ([dateStr, txsOnDate]) => {
                 try {
+                  const coingeckoApiKey = process.env.NEXT_PUBLIC_COINGECKO_API_KEY;
                   const res = await fetch(
-                    `https://api.coingecko.com/api/v3/coins/ethereum/history?date=${dateStr}&localization=false`
+                    `https://api.coingecko.com/api/v3/coins/ethereum/history?date=${dateStr}&localization=false`,
+                    coingeckoApiKey
+                      ? {
+                          headers: {
+                            'x-cg-pro-api-key': coingeckoApiKey,
+                          },
+                        }
+                      : undefined
                   );
                   const data = await res.json();
                   const price = data?.market_data?.current_price?.usd;
@@ -391,7 +395,7 @@ export default function TransactionsPage() {
                       if (company) {
                         doc.setFontSize(10);
                         doc.text(
-                          `Name: ${company.name || "N/A"}`,
+                          `Name: ${company.name || <Name/>}`,
                           10,
                           y
                         );
@@ -478,7 +482,7 @@ export default function TransactionsPage() {
                       // Draw outer table border (optional, for clarity)
                       // doc.rect(tableStartX, tableStartY - rowHeight + 2, colWidths.reduce((a, b) => a + b, 0), y - tableStartY + rowHeight);
 
-                      doc.save("transactions.pdf");
+                      doc.save(`${address}transactions.pdf`);
                     }}
                   >
                     Export PDF
