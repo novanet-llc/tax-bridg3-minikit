@@ -14,7 +14,7 @@ export default function Home() {
           Generate reports for tax filing on your local currency easily.
         </p>
         <p className="text-[var(--app-foreground-muted)] mb-4">
-          Don't forget to fill your company data if you want to have the export for your company's name!
+          Don't forget to fill your company data if you want to have the export for your company&apos;s name!
         </p>
         <p className="text-[var(--app-foreground-muted)] mb-4">
           Support and advisory: <a href="mailto:central@novanet.hu" className="underline">central@novanet.hu</a>
