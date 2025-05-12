@@ -24,9 +24,11 @@ export default function App() {
             variant="ghost"
             size="sm"
             className="text-[var(--ock-text-foreground-muted)] text-xs"
-            onClick={() => openUrl("https://base.org/builders/minikit")}
+            onClick={() => openUrl("https://novanet.hu")}
           >
-            Built on Base with MiniKit
+            <svg width="18" height="18" viewBox="0 0 18 18" className="mr-2" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="9,3 3,13 15,13" fill="none" stroke="white" strokeWidth="2"/>
+            </svg>NovaNet
           </Button>
         </footer>
       </div>
