@@ -41,14 +41,53 @@ export async function exportTransactionsPDF({
     y += 6;
     doc.text(`Tax ID: ${company.taxId || ""}`, 10, y); y += 6;
     doc.text(`City: ${company.city || ""}`, 10, y); y += 6;
-    doc.text(`Country: ${company.country || ""}`, 10, y); y += 6;
+    // Fetch full country name from restcountries.com
+    let countryName = company.country || "";
+    if (company.country) {
+      try {
+        const res = await fetch(`https://restcountries.com/v3.1/alpha/${company.country}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data[0]?.name?.common) {
+            countryName = data[0].name.common;
+          }
+        }
+      } catch (e) {
+        // fallback to ISO code
+      }
+    }
+    doc.text(`Country: ${countryName}`, 10, y); y += 6;
     doc.text(`Postal Code: ${company.postalCode || ""}`, 10, y); y += 6;
     doc.text(`Address: ${company.address || "N/A"}`, 10, y); y += 6;
     doc.text(`D-U-N-S ID: ${company.dunsId || ""}`, 10, y); y += 6;
     if (company.logoUrl) {
       try {
+        const { imageSize } = await import('image-size');
         const img = company.logoUrl;
-        doc.addImage(img, "PNG", 150, 10, 40, 40);
+        // Extract base64 data from data URL
+        const base64Match = img.match(/^data:image\/\w+;base64,(.+)$/);
+        if (base64Match) {
+          const base64Data = base64Match[1];
+          const buffer = Buffer.from(base64Data, 'base64');
+          // Get image dimensions
+          const sizeOf = (await import('image-size')).default || (await import('image-size')).imageSize;
+          const dimensions = sizeOf(buffer);
+          let { width, height } = dimensions;
+          // Fit within 40x40 while preserving aspect ratio
+          const maxDim = 40;
+          if (width && height) {
+            let scale = Math.min(maxDim / width, maxDim / height, 1);
+            let drawWidth = width * scale;
+            let drawHeight = height * scale;
+            doc.addImage(img, "PNG", 150, 10, drawWidth, drawHeight);
+          } else {
+            // fallback to fixed size if dimensions not found
+            doc.addImage(img, "PNG", 150, 10, 40, 40);
+          }
+        } else {
+          // fallback to fixed size if not a data URL
+          doc.addImage(img, "PNG", 150, 10, 40, 40);
+        }
       } catch {}
     }
     y += 2;
@@ -64,7 +103,7 @@ export async function exportTransactionsPDF({
   y += 4;
   doc.setFontSize(14);
   doc.text("Transactions", 10, y);
-  y += 8;
+  y += 14;
   doc.setFontSize(9);
   const headers = ["Hash", "From", "To", "Value (ETH)", "Value (USD)", "Timestamp"];
   const colWidths = [30, 30, 30, 20, 20, 40];
@@ -73,7 +112,7 @@ export async function exportTransactionsPDF({
   doc.setFont("helvetica", "bold");
   let x = tableStartX;
   headers.forEach((h, i) => {
-    doc.text(h, x, y);
+    doc.text(h, (x + 1), y);
     x += colWidths[i];
   });
   doc.rect(tableStartX, y - rowHeight + 2, colWidths.reduce((a, b) => a + b, 0), rowHeight);
@@ -93,7 +132,7 @@ export async function exportTransactionsPDF({
     ];
     doc.rect(tableStartX, y - rowHeight + 2, colWidths.reduce((a, b) => a + b, 0), rowHeight);
     row.forEach((cell, i) => {
-      doc.text(String(cell).slice(0, 30), x, y, { maxWidth: colWidths[i] - 2 });
+      doc.text(String(cell).slice(0, 30), (x + 1), (y - 3), { maxWidth: colWidths[i] - 2 });
       x += colWidths[i];
     });
     y += rowHeight;

@@ -8,11 +8,12 @@ export async function GET(req: NextRequest) {
   }
 
   const apiKey = process.env.COINGECKO_API_KEY;
+      
   const url = `https://api.coingecko.com/api/v3/coins/ethereum/history?date=${date}&localization=false`;
 
   try {
     const res = await fetch(url, apiKey
-      ? { headers: { "x-cg-pro-api-key": apiKey } }
+      ? { headers: { "x-cg-demo-api-key": apiKey, 'accept': 'application/json' } }
       : undefined
     );
     const data = await res.json();

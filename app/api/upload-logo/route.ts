@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "edge"; // or "nodejs" if you need Node APIs
+export const runtime = "edge";
 
-// Use environment variables for Supabase secret key and URL
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 export async function POST(req: NextRequest) {
   try {
-    // Parse form data
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const companyName = formData.get("companyName") as string;
@@ -21,15 +24,24 @@ export async function POST(req: NextRequest) {
     }
 
     const fileExt = file.name.split(".").pop();
-    const safeCompanyName = companyName.trim().replace(/\s+/g, "_");
+    const safeCompanyName = companyName.trim().replace(/\s+/g, "_").toLowerCase();
     const fileName = `${safeCompanyName}-logo_${Date.now()}.${fileExt}`;
 
-    // Upload to Supabase Storage
+    // Convert File to ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    const fileData = new Uint8Array(arrayBuffer);
+
+    // Upload to Supabase Storage with explicit content type
     const { error: uploadError } = await supabase.storage
       .from("company-logos")
-      .upload(fileName, file.stream(), { upsert: true });
+      .upload(fileName, fileData, {
+        contentType: file.type || "image/*",
+        cacheControl: "3600",
+        upsert: false
+      });
 
     if (uploadError) {
+      console.error("Supabase upload error:", uploadError);
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
