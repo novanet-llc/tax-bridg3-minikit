@@ -6,8 +6,22 @@ import Home from "./components/Home";
 import { Header } from "./components/Header";
 import { AppTabs } from "./components/AppTabs";
 
-export default function App() {
+import React, { useEffect, useState } from "react";
 
+export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const matchMedia = window.matchMedia("(prefers-color-scheme: dark)");
+      setIsDarkMode(matchMedia.matches);
+
+      const handler = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+      matchMedia.addEventListener("change", handler);
+
+      return () => matchMedia.removeEventListener("change", handler);
+    }
+  }, []);
 
   const openUrl = useOpenUrl();
 
@@ -20,16 +34,29 @@ export default function App() {
           <Home />
         </main>
         <footer className="mt-2 pt-4 flex justify-center">
-          <Button
+            <Button
             variant="ghost"
             size="sm"
             className="text-[var(--ock-text-foreground-muted)] text-xs"
             onClick={() => openUrl("https://novanet.hu")}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" className="mr-2" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="9,3 3,13 15,13" fill="none" stroke="white" strokeWidth="2"/>
-            </svg>NovaNet
-          </Button>
+            >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              className="mr-2"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <polygon
+                points="9,3 3,13 15,13"
+                fill="none"
+                stroke={isDarkMode ? "white" : "black"}
+                strokeWidth="2"
+              />
+            </svg>
+            NovaNet
+            </Button>
         </footer>
       </div>
     </div>
