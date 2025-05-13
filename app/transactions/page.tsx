@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { AppTabs } from "../components/AppTabs";
 import { Card, Button, Select, Input } from "../components/DemoComponents";
-import { Name } from "@coinbase/onchainkit/identity";
 
 type Transaction = {
   hash: string;
@@ -72,8 +71,8 @@ export default function TransactionsPage() {
       setError(null);
 
       try {
-        const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || "YOUR_ETHERSCAN_API_KEY";
-        const url = `${network.apiBase}/api?module=account&action=txlist&address=${address}&sort=desc&apikey=${apiKey}`;
+        // Fetch transactions from Next.js API route (server-side, API key protected)
+        const url = `/api/etherscan?address=${address}&network=${network.key}`;
         const res = await fetch(url);
         const data = await res.json();
 
@@ -97,22 +96,14 @@ export default function TransactionsPage() {
             dateMap[dateStr].push(tx);
           });
 
-          // Fetch USD price for each unique date
+          // Fetch USD price for each unique date from Next.js API route (server-side, API key protected)
           const fetchPrices = async () => {
             const usdMap: { [hash: string]: number } = {};
             await Promise.all(
               Object.entries(dateMap).map(async ([dateStr, txsOnDate]) => {
                 try {
-                  const coingeckoApiKey = process.env.NEXT_PUBLIC_COINGECKO_API_KEY;
                   const res = await fetch(
-                    `https://api.coingecko.com/api/v3/coins/ethereum/history?date=${dateStr}&localization=false`,
-                    coingeckoApiKey
-                      ? {
-                          headers: {
-                            'x-cg-pro-api-key': coingeckoApiKey,
-                          },
-                        }
-                      : undefined
+                    `/api/coingecko?date=${dateStr}`
                   );
                   const data = await res.json();
                   const price = data?.market_data?.current_price?.usd;
@@ -385,104 +376,13 @@ export default function TransactionsPage() {
                   <Button
                     variant="outline"
                     onClick={async () => {
-                      const jsPDF = (await import("jspdf")).default;
-                      const doc = new jsPDF();
-
-                      let y = 10;
-                      doc.setFontSize(14);
-                      doc.text("Company Profile", 10, y);
-                      y += 8;
-                      // Fallback to generic placeholder if no company name and no identity context
-                      if (company) {
-                        doc.setFontSize(10);
-                        doc.text(
-                          `Name: ${company.name || <Name/>}`,
-                          10,
-                          y
-                        );
-                        y += 6;
-                        doc.text(`Tax ID: ${company.taxId || ""}`, 10, y); y += 6;
-                        doc.text(`City: ${company.city || ""}`, 10, y); y += 6;
-                        doc.text(`Country: ${company.country || ""}`, 10, y); y += 6;
-                        doc.text(`Postal Code: ${company.postalCode || ""}`, 10, y); y += 6;
-                        doc.text(
-                          `Address: ${company.address || "N/A"}`,
-                          10,
-                          y
-                        );
-                        y += 6;
-                        doc.text(`D-U-N-S ID: ${company.dunsId || ""}`, 10, y); y += 6;
-                        if (company.logoUrl) {
-                          try {
-                            const img = company.logoUrl;
-                            doc.addImage(img, "PNG", 150, 10, 40, 40);
-                          } catch {}
-                        }
-                        y += 2;
-                      } else {
-                        doc.setFontSize(10);
-                        doc.text(
-                          `Name: N/A`,
-                          10,
-                          y
-                        );
-                        y += 6;
-                        doc.text(
-                          `Address: N/A`,
-                          10,
-                          y
-                        );
-                        y += 6;
-                        doc.text("No company data found.", 10, y); y += 6;
-                      }
-
-                      y += 4;
-                      doc.setFontSize(14);
-                      doc.text("Transactions", 10, y);
-                      y += 8;
-                      doc.setFontSize(9);
-                      const headers = ["Hash", "From", "To", "Value (ETH)", "Value (USD)", "Timestamp"];
-                      const colWidths = [30, 30, 30, 20, 20, 40];
-                      const tableStartX = 10;
-                      const rowHeight = 10; // double the previous height
-                      doc.setFont("helvetica", "bold");
-                      let x = tableStartX;
-                      headers.forEach((h, i) => {
-                        doc.text(h, x, y);
-                        x += colWidths[i];
+                      const { exportTransactionsPDF } = await import("../../lib/pdf");
+                      await exportTransactionsPDF({
+                        company,
+                        filteredTransactions,
+                        usdValues,
+                        address,
                       });
-                      // Draw header border
-                      doc.rect(tableStartX, y - rowHeight + 2, colWidths.reduce((a, b) => a + b, 0), rowHeight);
-                      doc.setFont("helvetica", "normal");
-                      y += rowHeight;
-                      filteredTransactions.forEach(tx => {
-                        x = tableStartX;
-                        const row = [
-                          tx.hash,
-                          tx.from,
-                          tx.to,
-                          (Number(tx.value) / 1e18).toString(),
-                          (typeof usdValues[tx.hash] === "number" && !isNaN(usdValues[tx.hash]))
-                            ? usdValues[tx.hash].toFixed(2)
-                            : "",
-                          new Date(Number(tx.timeStamp) * 1000).toLocaleString(),
-                        ];
-                        // Draw row border
-                        doc.rect(tableStartX, y - rowHeight + 2, colWidths.reduce((a, b) => a + b, 0), rowHeight);
-                        row.forEach((cell, i) => {
-                          doc.text(String(cell).slice(0, 30), x, y, { maxWidth: colWidths[i] - 2 });
-                          x += colWidths[i];
-                        });
-                        y += rowHeight;
-                        if (y > 270) {
-                          doc.addPage();
-                          y = 10;
-                        }
-                      });
-                      // Draw outer table border (optional, for clarity)
-                      // doc.rect(tableStartX, tableStartY - rowHeight + 2, colWidths.reduce((a, b) => a + b, 0), y - tableStartY + rowHeight);
-
-                      doc.save(`${address}transactions.pdf`);
                     }}
                   >
                     Export PDF

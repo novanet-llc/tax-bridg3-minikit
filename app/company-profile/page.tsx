@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useWalletContext } from "@coinbase/onchainkit/wallet";
 import { Header } from "../components/Header";
 import { AppTabs } from "../components/AppTabs";
 import { Card, Button, Input, Select } from "../components/DemoComponents";
-import { supabase } from "../../lib/supabaseClient";
 import Image from "next/image";
 
 type CompanyData = {
@@ -29,6 +29,9 @@ export default function CompanyProfilePage() {
     dunsId: "",
     logoUrl: null,
   });
+
+  // Get wallet address from wallet context
+  const { address } = useWalletContext();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [countries, setCountries] = useState<{ name: string; iso2: string }[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
@@ -98,40 +101,69 @@ export default function CompanyProfilePage() {
 
     let logoUrl = company.logoUrl;
 
-    // Upload logo file to Supabase Storage if present
+    // Upload logo file to API if present
     if (logoFile) {
-      const fileExt = logoFile.name.split('.').pop();
-      const safeCompanyName = company.name.trim().replace(/\s+/g, "_");
-      const fileName = `${safeCompanyName}-logo_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("company-logos")
-        .upload(fileName, logoFile, { upsert: true });
+      const formData = new FormData();
+      formData.append("file", logoFile);
+      formData.append("companyName", company.name);
 
-      if (uploadError) {
-        setError("Failed to upload logo: " + uploadError.message);
+      try {
+        const res = await fetch("/api/upload-logo", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError("Failed to upload logo: " + (data.error || "Unknown error"));
+          setSubmitting(false);
+          return;
+        }
+        logoUrl = data.publicUrl || null;
+      } catch (err: unknown) {
+
+        if (err instanceof Error) {
+          setError("Failed to upload logo: " + (err.message || "Unknown error"));
+        } else {
+          setError("Failed to upload logo: Unknown error");
+        }
+        
         setSubmitting(false);
         return;
       }
-
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from("company-logos")
-        .getPublicUrl(fileName);
-      logoUrl = publicUrlData?.publicUrl || null;
     }
 
-    // Insert company profile into Supabase
-    const { error: insertError } = await supabase
-      .from("company_profiles")
-      .insert([
-        {
+    // Submit company profile to backend API to shelter Supabase key
+    try {
+      if (!address) {
+        setError("Please connect your wallet before saving the company profile.");
+        setSubmitting(false);
+        return;
+      }
+      const res = await fetch("/api/company", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           ...company,
           logoUrl,
-        },
-      ]);
-
-    if (insertError) {
-      setError("Failed to save company profile: " + insertError.message);
+          wallet_address: address,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError("Failed to save company profile: " + (data.error || "Unknown error"));
+        setSubmitting(false);
+        return;
+      }
+    } catch (err: unknown) {
+  
+      if (err instanceof Error) {
+      setError("Failed to save company profile: " + (err.message || "Unknown error"));
+      } else {
+      setError("Failed to save company profile: Unknown error");
+      }
+  
       setSubmitting(false);
       return;
     }
