@@ -1,6 +1,6 @@
 # MiniKit Template
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-onchain --mini`](), configured with: 
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-onchain --mini`](), configured with:  
 
 - [MiniKit](https://docs.base.org/builderkits/minikit/overview)
 - [OnchainKit](https://www.base.org/builders/onchainkit)
