@@ -41,6 +41,7 @@ export async function exportTransactionsPDF({
     y += 6;
     doc.text(`Tax ID: ${company.taxId || ""}`, 10, y); y += 6;
     doc.text(`City: ${company.city || ""}`, 10, y); y += 6;
+    
     // Fetch full country name from restcountries.com
     let countryName = company.country || "";
     if (company.country) {
@@ -52,7 +53,8 @@ export async function exportTransactionsPDF({
             countryName = data[0].name.common;
           }
         }
-      } catch (e) {
+      } catch (e: unknown) {
+        console.error("Error fetching country name:", e);
         // fallback to ISO code
       }
     }
@@ -62,7 +64,6 @@ export async function exportTransactionsPDF({
     doc.text(`D-U-N-S ID: ${company.dunsId || ""}`, 10, y); y += 6;
     if (company.logoUrl) {
       try {
-        const { imageSize } = await import('image-size');
         const img = company.logoUrl;
         // Extract base64 data from data URL
         const base64Match = img.match(/^data:image\/\w+;base64,(.+)$/);
@@ -72,13 +73,13 @@ export async function exportTransactionsPDF({
           // Get image dimensions
           const sizeOf = (await import('image-size')).default || (await import('image-size')).imageSize;
           const dimensions = sizeOf(buffer);
-          let { width, height } = dimensions;
+          const { width, height } = dimensions;
           // Fit within 40x40 while preserving aspect ratio
           const maxDim = 40;
           if (width && height) {
-            let scale = Math.min(maxDim / width, maxDim / height, 1);
-            let drawWidth = width * scale;
-            let drawHeight = height * scale;
+            const scale = Math.min(maxDim / width, maxDim / height, 1);
+            const drawWidth = width * scale;
+            const drawHeight = height * scale;
             doc.addImage(img, "PNG", 150, 10, drawWidth, drawHeight);
           } else {
             // fallback to fixed size if dimensions not found

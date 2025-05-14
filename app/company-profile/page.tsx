@@ -29,8 +29,6 @@ export default function CompanyProfilePage() {
     dunsId: "",
     logoUrl: null,
   });
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileExists, setProfileExists] = useState(false);
 
   // Get wallet address from wallet context
   const { address } = useAccount();
@@ -51,14 +49,12 @@ export default function CompanyProfilePage() {
           dunsId: parsed.dunsId || "",
           logoUrl: parsed.logoUrl || null,
         });
-        setProfileExists(true);
       } catch {
         // If parsing fails, ignore and continue to API fetch
       }
     }
   }, []);
 
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [countries, setCountries] = useState<{ name: string; iso2: string }[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -107,7 +103,7 @@ export default function CompanyProfilePage() {
   const handleLogoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setLogoFile(file);
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         setCompany((prev) => ({
@@ -137,6 +133,7 @@ export default function CompanyProfilePage() {
       localStorage.setItem("companyProfile", JSON.stringify(companyToStore));
       setSuccess(true);
     } catch (err) {
+      console.error("Error saving company profile to local storage:", err);
       setError("Failed to save company profile to local storage.");
     }
 
@@ -149,15 +146,6 @@ export default function CompanyProfilePage() {
         <Header />
         <AppTabs />
         <Card title="Company Profile" className="mb-4">
-          {profileLoading ? (
-            <div className="flex flex-col items-center justify-center py-10">
-              <svg className="animate-spin h-8 w-8 text-[var(--app-foreground)] mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
-              <span className="font-medium">Loading profile...</span>
-            </div>
-          ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="name">
@@ -298,7 +286,6 @@ export default function CompanyProfilePage() {
               {error && <div className="text-red-600 text-sm mt-2">{error}</div>}
               {success && <div className="text-green-600 text-sm mt-2">Company profile saved!</div>}
             </form>
-          )}
         </Card>
       </div>
     </div>
