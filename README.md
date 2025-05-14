@@ -1,104 +1,80 @@
-# MiniKit Template
+# Tax Bridg3
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-onchain --mini`](), configured with:   
+![Tax Bridg3 Logo](public/logo.png)
 
-- [MiniKit](https://docs.base.org/builderkits/minikit/overview)
-- [OnchainKit](https://www.base.org/builders/onchainkit)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Next.js](https://nextjs.org/docs)
+> **Generate crypto tax reports in your local currency, fast and easy.**
+
+## What is Tax Bridg3?
+
+Tax Bridg3 is a modern web application that helps you generate comprehensive reports for tax filing on your local currency, with seamless support for both individual and company data. Effortlessly manage your crypto transactions, integrate with leading blockchain APIs, and export ready-to-file reports.
+
+- **Generate tax reports** for your crypto transactions
+- **Export reports** with your company’s name and details
+- **Integrate** with Etherscan, Coingecko, and more
+- **PDF export** for easy sharing and filing
+- **Modern, responsive UI** built with Next.js and Tailwind CSS
+
+## Features
+
+- **Blockchain Integrations:** Fetch data from Etherscan, Coingecko, and other APIs
+- **Company Profile:** Add your company data for branded exports
+- **Transaction Management:** View and manage your crypto transactions
+- **PDF Report Generation:** Export your tax reports as PDFs
+- **Local Currency Support:** Reports generated in your local currency
+- **Local Storage:** We save data only loclStorage, and not send your company's data into mysterisous cloud ervers.
 
 ## Getting Started
 
-1. Install dependencies:
+### Prerequisites
+
+- Node.js (v18+ recommended)
+- Yarn or npm
+
+### Installation
+
 ```bash
 npm install
-# or
-yarn install
-# or
-pnpm install
-# or
-bun install
 ```
 
-2. Verify environment variables, these will be set up by the `npx create-onchain --mini` command:
+### Running the App
 
-You can regenerate the FARCASTER Account Association environment variables by running `npx create-onchain --manifest` in your project directory.
-
-The environment variables enable the following features:
-
-- Frame metadata - Sets up the Frame Embed that will be shown when you cast your frame
-- Account association - Allows users to add your frame to their account, enables notifications
-- Redis API keys - Enable Webhooks and background notifications for your application by storing users notification details
-
-```bash
-# Required for Frame metadata
-NEXT_PUBLIC_URL=
-NEXT_PUBLIC_VERSION=
-NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME=
-NEXT_PUBLIC_ICON_URL=
-NEXT_PUBLIC_IMAGE_URL=
-NEXT_PUBLIC_SPLASH_IMAGE_URL=
-NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR=
-
-# Required to allow users to add your frame
-FARCASTER_HEADER=
-FARCASTER_PAYLOAD=
-FARCASTER_SIGNATURE=
-
-# Required for webhooks and background notifications
-REDIS_URL=
-REDIS_TOKEN=
-```
-
-3. Start the development server:
 ```bash
 npm run dev
 ```
 
-## Template Features
+The app will be available at [http://localhost:3000](http://localhost:3000).
 
-### Frame Configuration
-- `.well-known/farcaster.json` endpoint configured for Frame metadata and account association
-- Frame metadata automatically added to page headers in `layout.tsx`
+## Usage
 
-### Background Notifications
-- Redis-backed notification system using Upstash
-- Ready-to-use notification endpoints in `api/notify` and `api/webhook`
-- Notification client utilities in `lib/notification-client.ts`
+1. **Connect your wallet or import transactions**
+2. **Fill in your company profile** (optional, for company-branded exports)
+3. **View and manage your transactions**
+4. **Generate and export your tax report as a PDF**
 
-### Theming
-- Custom theme defined in `theme.css` with OnchainKit variables
-- Pixel font integration with Pixelify Sans
-- Dark/light mode support through OnchainKit
+## API Integrations
 
-### MiniKit Provider
-The app is wrapped with `MiniKitProvider` in `providers.tsx`, configured with:
-- OnchainKit integration
-- Access to Frames context
-- Sets up Wagmi Connectors
-- Sets up Frame SDK listeners
-- Applies Safe Area Insets
+- [Etherscan](https://etherscan.io/)
+- [Coingecko](https://coingecko.com/)
+- [Supabase](https://supabase.com/)
+- [Upstash Redis](https://upstash.com/)
 
-## Customization
+## Technologies Used
 
-To get started building your own frame, follow these steps:
+- [Next.js](https://nextjs.org/)
+- [React](https://react.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [PostCSS](https://postcss.org/)
+- [Supabase](https://supabase.com/)
+- [Upstash Redis](https://upstash.com/)
+- [wagmi](https://wagmi.sh/)
+- [viem](https://viem.sh/)
+- [jspdf](https://github.com/parallax/jsPDF)
 
-1. Remove the DemoComponents:
-   - Delete `components/DemoComponents.tsx`
-   - Remove demo-related imports from `page.tsx`
+## Support
 
-2. Start building your Frame:
-   - Modify `page.tsx` to create your Frame UI
-   - Update theme variables in `theme.css`
-   - Adjust MiniKit configuration in `providers.tsx`
+For support and advisory, contact: [central@novanet.hu](mailto:central@novanet.hu)
 
-3. Add your frame to your account:
-   - Cast your frame to see it in action
-   - Share your frame with others to start building your community
+## License
 
-## Learn More
-
-- [MiniKit Documentation](https://docs.base.org/builderkits/minikit/overview)
-- [OnchainKit Documentation](https://docs.base.org/builderkits/onchainkit/getting-started)
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+Proprietary. Contact [central@novanet.hu](mailto:central@novanet.hu) for licensing information.
