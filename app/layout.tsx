@@ -3,6 +3,7 @@ import '@coinbase/onchainkit/styles.css';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from './providers';
+import { GoogleTagManager } from '@next/third-parties/google'
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -42,6 +43,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-background">
         <Providers>{children}</Providers>
+        <GoogleTagManager gtmId={`${process.env.NEXT_PUBLIC_GTM_ID}`} />
       </body>
     </html>
   );
