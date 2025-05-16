@@ -2,7 +2,7 @@
 
 ![Tax Bridg3 Logo](public/logo.png)
 
-> **Generate crypto tax reports in your local currency, fast and easy.**
+> **Generate crypto tax reports in your local currency, fast and easy.** 
 
 ## What is Tax Bridg3?
 
