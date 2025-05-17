@@ -20,12 +20,14 @@ type Company = {
 export async function exportTransactionsPDF({
   company,
   filteredTransactions,
-  usdValues,
+  fiatValues,
+  fiatCode,
   address,
 }: {
   company: Company;
   filteredTransactions: Transaction[];
-  usdValues: { [hash: string]: number };
+  fiatValues: { [hash: string]: number };
+  fiatCode: string;
   address: string | undefined;
 }) {
   const jsPDF = (await import("jspdf")).default;
@@ -106,7 +108,7 @@ export async function exportTransactionsPDF({
   doc.text("Transactions", 10, y);
   y += 14;
   doc.setFontSize(9);
-  const headers = ["Hash", "From", "To", "Value (ETH)", "Value (USD)", "Timestamp"];
+  const headers = ["Hash", "From", "To", "Value (ETH)", `Value (${fiatCode})`, "Timestamp"];
   const colWidths = [30, 30, 30, 20, 20, 40];
   const tableStartX = 10;
   const rowHeight = 10;
@@ -126,8 +128,8 @@ export async function exportTransactionsPDF({
       tx.from,
       tx.to,
       (Number(tx.value) / 1e18).toString(),
-      (typeof usdValues[tx.hash] === "number" && !isNaN(usdValues[tx.hash]))
-        ? usdValues[tx.hash].toFixed(2)
+      (typeof fiatValues[tx.hash] === "number" && !isNaN(fiatValues[tx.hash]))
+        ? fiatValues[tx.hash].toFixed(2)
         : "",
       new Date(Number(tx.timeStamp) * 1000).toLocaleString(),
     ];

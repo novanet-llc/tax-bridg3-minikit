@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Header } from "../components/Header";
 import { AppTabs } from "../components/AppTabs";
 import { Card, Button, Select, Input } from "../components/DemoComponents";
+import fiatList from "../../data/fiat.json";
 
 type Transaction = {
   hash: string;
@@ -38,7 +39,8 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [network, setNetwork] = useState(NETWORKS[0]); // Default to mainnet
-  const [usdValues, setUsdValues] = useState<{ [hash: string]: number }>({});
+  const [fiatValues, setFiatValues] = useState<{ [hash: string]: number }>({});
+  const [fiatCode, setFiatCode] = useState<string>("USD");
   const [company, setCompany] = useState<{
     name: string;
     taxId: string;
@@ -59,8 +61,29 @@ export default function TransactionsPage() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("companyProfile");
-      if (stored) setCompany(JSON.parse(stored));
-    } catch {}
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setCompany(parsed);
+
+        // Determine fiat code from company country
+        if (parsed.country) {
+          const fiatEntry = fiatList.find(
+            (f) => f.country_iso2.toUpperCase() === parsed.country.toUpperCase()
+          );
+          if (fiatEntry && fiatEntry.iso3) {
+            setFiatCode(fiatEntry.iso3.toUpperCase());
+          } else {
+            setFiatCode("USD");
+          }
+        } else {
+          setFiatCode("USD");
+        }
+      } else {
+        setFiatCode("USD");
+      }
+    } catch {
+      setFiatCode("USD");
+    }
   }, []);
 
   useEffect(() => {
@@ -79,7 +102,6 @@ export default function TransactionsPage() {
         if (data.status !== "1") {
           setError("No transactions found or error fetching transactions.");
           setTransactions([]);
-          setUsdValues({});
         } else {
           const txs: Transaction[] = data.result;
           setTransactions(txs);
@@ -96,9 +118,10 @@ export default function TransactionsPage() {
             dateMap[dateStr].push(tx);
           });
 
-          // Fetch USD price for each unique date from Next.js API route (server-side, API key protected)
+          // Fetch fiat and USD price for each unique date from Next.js API route (server-side, API key protected)
           const fetchPrices = async () => {
             const usdMap: { [hash: string]: number } = {};
+            const fiatMap: { [hash: string]: number } = {};
             await Promise.all(
               Object.entries(dateMap).map(async ([dateStr, txsOnDate]) => {
                 try {
@@ -106,10 +129,27 @@ export default function TransactionsPage() {
                     `/api/coingecko?date=${dateStr}`
                   );
                   const data = await res.json();
-                  const price = data?.market_data?.current_price?.usd;
-                  if (price) {
+                  const fiatKey = fiatCode.toLowerCase();
+                  const fiatPrice = data?.market_data?.current_price?.[fiatKey];
+                  const usdPrice = data?.market_data?.current_price?.usd;
+
+                  if (fiatPrice) {
                     txsOnDate.forEach(tx => {
-                      usdMap[tx.hash] = price * (Number(tx.value) / 1e18);
+                      fiatMap[tx.hash] = fiatPrice * (Number(tx.value) / 1e18);
+                    });
+                  } else if (usdPrice) {
+                    txsOnDate.forEach(tx => {
+                      fiatMap[tx.hash] = usdPrice * (Number(tx.value) / 1e18);
+                    });
+                  } else {
+                    txsOnDate.forEach(tx => {
+                      fiatMap[tx.hash] = NaN;
+                    });
+                  }
+
+                  if (usdPrice) {
+                    txsOnDate.forEach(tx => {
+                      usdMap[tx.hash] = usdPrice * (Number(tx.value) / 1e18);
                     });
                   } else {
                     txsOnDate.forEach(tx => {
@@ -118,12 +158,13 @@ export default function TransactionsPage() {
                   }
                 } catch {
                   txsOnDate.forEach(tx => {
+                    fiatMap[tx.hash] = NaN;
                     usdMap[tx.hash] = NaN;
                   });
                 }
               })
             );
-            setUsdValues(usdMap);
+            setFiatValues(fiatMap);
           };
 
           fetchPrices();
@@ -132,7 +173,6 @@ export default function TransactionsPage() {
         setError("Failed to fetch transactions.");
         console.error(err);
         setTransactions([]);
-        setUsdValues({});
       } finally {
         setLoading(false);
       }
@@ -322,13 +362,16 @@ export default function TransactionsPage() {
                       </div>
                       <div className="text-xs">
                         <span>Value:</span> {Number(tx.value) / 1e18} ETH
-                        {typeof usdValues[tx.hash] === "number" && !isNaN(usdValues[tx.hash]) && (
+                        {typeof fiatValues[tx.hash] === "number" && !isNaN(fiatValues[tx.hash]) && (
                           <span className="ml-2 text-green-700">
-                            (${usdValues[tx.hash].toLocaleString(undefined, { maximumFractionDigits: 2 })} USD)
+                            ({fiatCode === "USD" ? "$" : ""}
+                            {fiatValues[tx.hash].toLocaleString(undefined, { maximumFractionDigits: 2 })} {fiatCode})
                           </span>
                         )}
-                        {typeof usdValues[tx.hash] === "number" && isNaN(usdValues[tx.hash]) && (
-                          <span className="ml-2 text-yellow-600">(USD unavailable)</span>
+                        {typeof fiatValues[tx.hash] === "number" && isNaN(fiatValues[tx.hash]) && (
+                          <span className="ml-2 text-yellow-600">
+                            ({fiatCode} unavailable)
+                          </span>
                         )}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -343,14 +386,14 @@ export default function TransactionsPage() {
                     variant="outline"
                     onClick={() => {
                       const csvRows = [
-                        ["Hash", "From", "To", "Value (ETH)", "Value (USD)", "Timestamp"],
+                        ["Hash", "From", "To", "Value (ETH)", `Value (${fiatCode})`, "Timestamp"],
                         ...filteredTransactions.map(tx => [
                           tx.hash,
                           tx.from,
                           tx.to,
                           (Number(tx.value) / 1e18).toString(),
-                          (typeof usdValues[tx.hash] === "number" && !isNaN(usdValues[tx.hash]))
-                            ? usdValues[tx.hash].toFixed(2)
+                          (typeof fiatValues[tx.hash] === "number" && !isNaN(fiatValues[tx.hash]))
+                            ? fiatValues[tx.hash].toFixed(2)
                             : "",
                           new Date(Number(tx.timeStamp) * 1000).toLocaleString(),
                         ]),
@@ -380,7 +423,8 @@ export default function TransactionsPage() {
                       await exportTransactionsPDF({
                         company,
                         filteredTransactions,
-                        usdValues,
+                        fiatValues,
+                        fiatCode,
                         address,
                       });
                     }}
