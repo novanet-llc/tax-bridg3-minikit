@@ -27,11 +27,11 @@ export async function GET() {
       ],
       primaryCategory: "finance",
       tags: [
-        "tax compliance",
-        "transaction history",
-        "tax filing",
-        "tax report",
-        "tax company profile"
+        "tax",
+        "transactions",
+        "tax-filing",
+        "tax-report",
+        "tax-compliance"
       ],
       heroImageUrl: `${AWS_CDN_URL}/taxbridg3-hero.png`,
       tagline: process.env.NEXT_PUBLIC_TAGLINE,
